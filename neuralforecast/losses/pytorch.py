@@ -132,6 +132,70 @@ class MAE(BasePointLoss):
         weights = self._compute_weights(y=y, mask=mask)
         return _weighted_mean(losses=losses, weights=weights)
 
+
+
+
+class MultiOutputMAE(BasePointLoss):
+    """
+    Multi-Output Mean Absolute Error (MAE) para modelos con múltiples salidas.
+
+    Calcula la pérdida como la media (sobre el batch) de la suma (sobre las salidas) 
+    del error absoluto entre las predicciones y los valores reales:
+
+        loss = mean( sum(|y - y_hat|, dim=1) )
+
+    Opcionalmente, se pueden aplicar pesos (por ejemplo, `horizon_weight`) o un enmascarado (`mask`)
+    para ponderar las contribuciones de cada salida.
+    
+    **Parámetros:**
+        horizon_weight (torch.Tensor, opcional): Tensor de pesos para cada salida.
+    """
+    def __init__(self, horizon_weight: Optional[torch.Tensor] = None):
+        super(MultiOutputMAE, self).__init__(horizon_weight=horizon_weight,
+                                               outputsize_multiplier=1,
+                                               output_names=[''])
+    
+    def __call__(self,
+                 y: torch.Tensor,
+                 y_hat: torch.Tensor,
+                 mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+        """
+        Calcula el Multi-Output MAE.
+
+        **Parámetros:**
+            y (torch.Tensor): Valores reales. Se asume forma (batch_size, num_outputs).
+            y_hat (torch.Tensor): Valores predichos. Se asume la misma forma que `y`.
+            mask (torch.Tensor, opcional): Tensor en el mismo shape que `y` que indica
+                qué elementos considerar (por ejemplo, con 1 para incluir y 0 para ignorar).
+
+        **Retorna:**
+            torch.Tensor: Escalar que representa la pérdida promedio sobre el batch.
+        """
+        # Calcula el error absoluto elemento a elemento
+        abs_errors = torch.abs(y - y_hat)
+        
+        # Si se proporciona una máscara o se definieron pesos, se aplican
+        weights = self._compute_weights(y=y, mask=mask)  # Se espera que retorne un tensor del mismo shape que y
+        
+        # Aplica los pesos de forma elemento a elemento
+        weighted_errors = abs_errors * weights
+
+        # Suma los errores ponderados a lo largo de la dimensión de las salidas
+        # (axis=1 en TensorFlow equivale a dim=1 en PyTorch)
+        sample_losses = torch.sum(weighted_errors, dim=1)
+
+        # Para normalizar cada muestra en caso de que los pesos no sean todos 1,
+        # se suma también los pesos a lo largo de la dimensión de las salidas.
+        # Se agrega un epsilon para evitar divisiones por cero.
+        eps = 1e-8
+        norm_factors = torch.sum(weights, dim=1) + eps
+        sample_losses = sample_losses / norm_factors
+
+        # Finalmente, se promedian las pérdidas sobre todo el batch
+        loss = torch.mean(sample_losses)
+        return loss
+    
+    
 # %% ../../nbs/losses.pytorch.ipynb 16
 class MSE(BasePointLoss):
     """Mean Squared Error

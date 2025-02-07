@@ -1,0 +1,9 @@
+{
+    "ACCOUNT": "bx74413.west-europe.privatelink",
+    "USER": "alberto.quinterobejarano@colaborador.elcorteingles.es",
+    "ROLE": "CAAR_FORECAST",
+    "WAREHOUSE": "WH_FORECAST",
+    "DATABASE": "CAA_UAT",
+    "SCHEMA": "STG_FORECAST",
+    "AUTHENTICATOR": "externalbrowser"
+}

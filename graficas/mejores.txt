@@ -1,0 +1,74 @@
+### MODELO 1
+
+horizon = 90
+max_steps = 100
+input_size = 5*horizon
+dropout=0.1
+learning_rate = 1e-2
+
+BiTCN(h = horizon,
+                input_size = input_size,
+                max_steps=max_steps,
+                futr_exog_list = exogenous_vars, 
+                stat_exog_list = stat_exog_list,
+                hist_exog_list=exogenous_vars, 
+                scaler_type = 'robust',
+                loss=PMM(n_components=5, return_params=True, level=[80,90]),
+                learning_rate = learning_rate,
+
+                hidden_size=32,  # Más unidades en las capas ocultas 16 - 128
+                dropout=dropout,  # Regularización
+                )
+
+	unique_id	model		WAPE		StdDev_Error
+0	ENCARGOS	BiTCN-lo-90	0.571284	1692.128354
+1	ENVIOS		BiTCN		0.129399	6975.881267
+
+
+### Disminuyendo las unidades en las capas ocultas hidden_size=8
+
+	unique_id	model		WAPE		StdDev_Error
+0	ENCARGOS	BiTCN		0.478737	1400.543513
+1	ENVIOS		BiTCN		0.129045	7043.060315
+
+
+### MODELO 1000
+
+horizon = 103
+max_steps = 1000
+input_size = 5*horizon
+dropout=0.1
+learning_rate = 1e-2
+
+train_cutoff = pd.Timestamp('2024-09-30') # '2024-09-30'
+# train_cutoff = df['ds'].max() - pd.Timedelta(days=horizon) 
+train_data = df[df['ds'] <= train_cutoff]
+test_data = df[(df['ds'] > train_cutoff) & (df['ds'] <= train_cutoff + pd.Timedelta(days=horizon))]
+
+BiTCN(h = horizon,
+                input_size = input_size,
+                max_steps=max_steps,
+                futr_exog_list = exogenous_vars, 
+                stat_exog_list = stat_exog_list,
+                #hist_exog_list=, 
+                scaler_type = 'robust',
+                loss=PMM(n_components=5, return_params=True, level=[95]),
+                # valid_loss=DistributionLoss(distribution='StudentT', level=[95]),
+                # valid_loss=PMM(n_components=5, return_params=True, level=[95]),
+                learning_rate = learning_rate,
+
+                hidden_size=16,  
+                dropout=dropout,
+
+                alias = 'BiTCN_long',
+                random_seed = 123,
+
+                val_check_steps=100, # def->100 Recomendable que sea menor a max_steps nro_validaciones = max_steps / val_check_steps 
+                # early_stop_patience_steps=10
+                  
+                )
+
+
+	unique_id	model		WAPE		StdDev_Error
+0	ENCARGOS	BiTCN_long	0.3348		1077.331902
+1	ENVIOS		BiTCN_long	0.1286		7030.497873

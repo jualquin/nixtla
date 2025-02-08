@@ -12,7 +12,8 @@ import torch
 import pytorch_lightning as pl
 
 from ray import air, tune
-from ray.tune.integration.pytorch_lightning import TuneReportCallback
+from ray.tune.integration.pytorch_lightning import TuneReportCheckpointCallback
+# from ray.tune.integration.pytorch_lightning import TuneReportCallback
 from ray.tune.search.basic_variant import BasicVariantGenerator
 
 # %% ../../nbs/common.base_auto.ipynb 6
@@ -198,7 +199,7 @@ class BaseAuto(pl.LightningModule):
         `test_size`: int, test size for temporal cross-validation.<br>
         """
         metrics = {"loss": "ptl/val_loss", "train_loss": "train_loss"}
-        callbacks = [TuneReportCallback(metrics, on="validation_end")]
+        callbacks = [TuneReportCheckpointCallback(metrics, on="validation_end")]
         if "callbacks" in config_step.keys():
             callbacks.extend(config_step["callbacks"])
         config_step = {**config_step, **{"callbacks": callbacks}}

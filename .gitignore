@@ -29,3 +29,6 @@ data
 mlruns
 checkpoints
 nbs/_extensions/mintlify
+# Ignorar el archivo de configuración
+config.json
+variables.json
